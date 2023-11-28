@@ -1,6 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+function generateRandomString() {
+    const uppercaseCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercaseCharacters = 'abcdefghijklmnopqrstuvwxyz';
+    const digitCharacters = '0123456789';
+    const specialCharacters = '@$!%*?&';
+
+    const getRandomChar = (characterSet) => {
+        const randomIndex = Math.floor(Math.random() * characterSet.length);
+        return characterSet.charAt(randomIndex);
+    };
+
+    const initialString =
+        getRandomChar(uppercaseCharacters) +
+        getRandomChar(digitCharacters) +
+        getRandomChar(specialCharacters);
+
+    const remainingCharacters =
+        lowercaseCharacters + uppercaseCharacters + digitCharacters + specialCharacters;
+
+    const shuffledString = initialString +
+        Array.from({ length: 9 }, () => getRandomChar(remainingCharacters))
+            .sort(() => Math.random() - 0.5)
+            .join('');
+
+    return shuffledString;
+}
 
 function CreateAccountPage() {
     const [formData, setFormData] = useState({
@@ -23,7 +49,7 @@ function CreateAccountPage() {
     };
 
     const handleAccountCreation = async (e) => {
-        e.preventDefault(); 
+        e.preventDefault();
         let valid = true;
         let errs = {};
 
@@ -34,7 +60,8 @@ function CreateAccountPage() {
 
         if (!validatePassword(formData.password)) {
             valid = false;
-            errs.password = 'Password must be at least 12 characters long and include at least 1 lowercase, 1 uppercase, 1 numeric, and 1 special character';
+            errs.password = 'Password must be 12+ characters with lowercase, uppercase, numeric, and special characters. ' +
+                `Suggested secure password: ${generateRandomString()}`;
         }
 
         if (formData.password !== formData.confirmPassword) {
@@ -53,7 +80,6 @@ function CreateAccountPage() {
 
             try {
                 const response = await fetch('/create/account', {
-
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -62,8 +88,8 @@ function CreateAccountPage() {
                 });
 
                 if (response.ok) {
-                    alert('Account created successfully! Please login.');
-                    navigate('/loginnavigation');
+                    alert('Account created successfully!');
+                    navigate('/'); // Redirect to homepage
                 } else {
                     const errorData = await response.json();
                     setErrors({ ...errs, server: errorData.message });
@@ -137,6 +163,7 @@ function CreateAccountPage() {
                 </div>
                 {errors.server && <p className="error-message">{errors.server}</p>}
                 <div className="submit-button">
+                    <button className="back-button" type="button" onClick={() => navigate('/')}>Back to Login</button>
                     <button className="login-button" onClick={handleAccountCreation}>Create Account</button>
                 </div>
             </form>

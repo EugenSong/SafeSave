@@ -6,22 +6,17 @@ function CreateSavedLoginPage() {
         website: '',
         username: '',
         password: '',
-        userID: null, // Initialized as null
-        userPassword: ''
     });
     const navigate = useNavigate();
-    const location = useLocation();
 
     // Update state with userID and unencrypted password
     React.useEffect(() => {
-        if (location.state) {
-            setLoginDetails(prevState => ({
-                ...prevState,
-                userID: location.state.userID,
-                userPassword: location.state.password
-            }));
-        }
-    }, [location.state]);
+        setLoginDetails(prevState => ({
+            ...prevState,
+        }));
+    }, []);
+
+
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -31,16 +26,17 @@ function CreateSavedLoginPage() {
     const handleSaveLogin = async (e) => {
         e.preventDefault();
 
-        const { website, username, password, userID } = loginDetails;
+        const { website, username, password } = loginDetails;
+
+
 
         const loginItemData = {
-            userLoginItemWebsite: website,
-            userLoginItemUsername: username,
-            userLoginItemPassword: password,
+            website: website,
+            username: username,
+            password: password,
             userLoginItemDateCreated: new Date().toISOString(),
             userLoginItemDateUpdated: new Date().toISOString(),
             userLoginItemDateAccessed: new Date().toISOString(),
-            userID: userID // Using the userID from state
         };
 
         try {
@@ -52,7 +48,7 @@ function CreateSavedLoginPage() {
 
             if (response.ok) {
                 alert('Login details saved successfully!');
-                navigate('/savedlogins', { state: { userID: userID, password: loginDetails.userPassword } });
+                navigate('/savedlogins');
             } else {
                 const errorMessage = await response.text();
                 alert(`Failed to save login details. Error: ${errorMessage}`);

@@ -1,6 +1,12 @@
 // Import dependencies.
 import 'dotenv/config';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import {readFileSync} from "fs";
+import * as db from "./db-connector.mjs";
+import mysql from 'mysql';
+
+const con = mysql.createConnection(db.dbConfig);
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const checkIfUsernameOrEmailExists = async (username, email) => {
@@ -11,7 +17,7 @@ const checkIfUsernameOrEmailExists = async (username, email) => {
     let emailExists = false;
 
     try {
-        const usernameResponse = await fetch('https://localhost:3001/users/byUsername/' + username);
+        const usernameResponse = await fetch(`https://localhost:3001/users/byUsername/${username}`);
         console.log(`usernameResponse is: ${usernameResponse}`); 
         if (usernameResponse.ok) {
             const usernameData = await usernameResponse.json();
@@ -47,14 +53,37 @@ const checkIfUsernameOrEmailExists = async (username, email) => {
 const createUser = async (username, email, password) => {
     try {
 
+        const userSalt = crypto.randomBytes(16).toString('hex');
+
+        //TODO: CHANGE SECRET KEY FILE UPON HOSTING LIVE
+        const secretKey = readFileSync("secret_key", "utf-8");
+        const emailHMAC = crypto.createHmac('sha256', secretKey);
+
+        const digestedEmailHMAC = emailHMAC.update(email).digest('hex')
+
+        const userHMAC = crypto.createHmac('sha256', secretKey)
+        const digestedUserHMAC = userHMAC.update(username).digest('hex');
+
+        //TODO: CHANGE KEYS UPON HOSTING
+        const pubKey = readFileSync("public-useremail.pem")
+        const privKey = readFileSync("private-useremail-key.pem")
+
+        const encryptedUsername =  crypto.publicEncrypt({key: pubKey, padding: crypto.constants.RSA_PKCS1_PADDING},
+            Buffer.from(username)).toString('hex');
+
+        const encryptedEmail = crypto.publicEncrypt({key: pubKey, padding: crypto.constants.RSA_PKCS1_PADDING},
+            Buffer.from(email)).toString('hex');
+
+
         // Prepare data for the POST request
         // TODO: assumption...data needs to be encrypted/hashed
         const postData = {
-            username: username,
-            email: email,
-            password: password
-
-            // include uid using uuid 
+            username: encryptedUsername,
+            email: encryptedEmail,
+            password: password,
+            userSalt: userSalt,
+            userHMAC: digestedUserHMAC,
+            userEmailHMAC: digestedEmailHMAC
 
         };
 
@@ -81,33 +110,56 @@ const createUser = async (username, email, password) => {
     }
 }
 
-let testingResponse;
+const checkIfUsernameExists = async (username) => {
+    try {
+        const secretKey = readFileSync("secret_key", "utf-8");
+        const userHMAC = crypto.createHmac('sha256', secretKey)
+        const digestedUserHMAC = userHMAC.update(username).digest('hex');
 
-const checkIfUsernameExists = (username) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const response = await fetch(`https://localhost:3001/users/byUsername/${username}`);
-            console.log('Response:', response);
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-
-            const data = await response.json();
-            console.log(`username found in checkIfUsernameExists: `, data);
-
-            resolve(!!data); // Resolving with a boolean value
-        } catch (error) {
-            console.log('There was a problem with the fetch operation:', error.message);
-            reject(error);
+        const response = await fetch(`https://localhost:3001/users/byUsername/${username}`)
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        const data = await response.json();
+        console.log(`username found: `, data);
+        if (data) {
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.log('There was a problem with the fetch operation:', error.message);
+    }
+}
+
+const getUserHashedPassword = (userID) => {
+    return new Promise((resolve, reject) => {
+        const passQuery = `SELECT userPassword FROM Users WHERE userID = ?`;
+
+        const values = [userID];
+        con.query(passQuery, values, (err, result) => {
+            if (err) {
+                console.error('Error executing query:', err);
+                reject(err);
+            } else {
+                const userPassword = result[0] ? result[0].userPassword : null;
+                console.log('Retrieved userPassword:', userPassword);
+                resolve(userPassword);
+            }
+        });
     });
 };
 
 
 const fetchUserFromUsername = async (username) => {
     try {
+
+        const secretKey = readFileSync("secret_key", "utf-8");
+        const userHMAC = crypto.createHmac('sha256', secretKey)
+        const digestedUserHMAC = userHMAC.update(username).digest('hex');
+
         const response = await fetch(`https://localhost:3001/users/byUsername/${username}`)
         if (!response.ok) {
+            console.log(`response was ${response.toString()}`)
             throw new Error('Network response was not ok');
         }
         const data = await response.json();
@@ -134,7 +186,7 @@ const validatePassword = async (username, plainTextPassword) => {
         }
         const data = await response.json();
         console.log(`user data found in validatePassword: `, data);
-        const hashedPassword = data[0].userPassword;
+        const hashedPassword = await getUserHashedPassword(data[0].userID)
 
         console.log(`hashedPassword is ${hashedPassword}`);
 
@@ -143,8 +195,12 @@ const validatePassword = async (username, plainTextPassword) => {
 
         // load hashed password field from username
         const hashesAreTheSame = await bcrypt.compare(plainTextPassword, hashedPassword);
-        if (hashesAreTheSame) return true;
-        return false;
+        if (hashesAreTheSame === true) {
+            return true;
+        }
+        else {
+            return false;
+        }
     } catch (error) {
         console.log('There was a problem with the fetch operation:', error.message);
     }

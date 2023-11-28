@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function SettingsPage() {
-    const [userID, setUserID] = useState(1);
     const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
     const [pendingTwoFactorEnabled, setPendingTwoFactorEnabled] = useState(false);
     const [message, setMessage] = useState('');
@@ -19,7 +19,7 @@ function SettingsPage() {
     const locateUserAndCheck2FAEnabled = async () => {
 
         try {
-            const response = await fetch('/api/check-2fa-enabled-and-real-secret') // PORT 8006 
+            const response = await fetch('/api/check-2fa-enabled') // PORT 8006 
             if (!response.ok) {
                 throw new Error('Something went wrong with fetch in SettingsPage');
             }
@@ -43,11 +43,11 @@ function SettingsPage() {
             //            const response = await fetch('https://localhost:8006/api/2fa-registration', {
             const response = await fetch('/api/2fa-registration', {
                 method: 'POST',
-                credentials: 'include', // Include credentials in the request
                 headers: {
                     'Content-Type': 'application/json',
                     // Include other headers as required, such as authentication tokens
                 },
+                credentials: 'include', // Include credentials in the request
                 body: JSON.stringify({ enableTwoFactor: newState }),
             });
 
@@ -84,13 +84,23 @@ function SettingsPage() {
         }
     };
 
-    const handleDeleteAccount = () => {
-        const confirmation = window.confirm("Are you sure you want to delete your account? This action is irreversible.");
-        if (confirmation) {
-            // Account deletion logic
-            console.log("Account deletion initiated");
-        }
-    };
+    // const handleDeleteAccount = async () => {
+    //     const confirmation = window.confirm("Are you sure you want to delete your account? This action is irreversible.");
+    //     if (confirmation) {
+    //         // Account deletion logic
+    //         const response = await fetch(`/users/${userID}`, {
+    //             method: 'DELETE',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //         });
+    //         if (response.status === 204) {
+    //             const navigate = useNavigate()
+    //             navigate('/createaccount')
+    //         }
+    //         else alert("Failed to delete account...")
+    //     }
+    // };
 
     return (
         <div>
@@ -113,7 +123,7 @@ function SettingsPage() {
             <section>
                 <h2>Account</h2>
                 <button onClick={() => {/* Navigate to account details */ }}>View Account Details</button>
-                <button onClick={handleDeleteAccount}>Delete Account</button>
+                {/* <button onClick={handleDeleteAccount}>Delete Account</button> */}
             </section>
             <section>
                 <h2>Save Changes</h2>

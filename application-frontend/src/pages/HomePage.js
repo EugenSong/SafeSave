@@ -6,35 +6,17 @@ function HomePage({ setLoginItem }) {
     const [savedLogins, setSavedLogins] = useState([]);
     const [savedNotes, setSavedNotes] = useState([]);
 
-    // Hardcoded default credentials
-    const [userID, setUserID] = useState(1);
-    const [userHash, setUserHash] = useState('pass1');
-    const [username, setUsername] = useState('Guest');
+    const navigate = useNavigate();
 
-    const location = useLocation();
-    const history = useNavigate();
-
-    console.log(location.state)
-
-    // change later 
     useEffect(() => {
-        if (!location.state) {
-            loadSavedLogins();
-            loadSavedNotes();
-            setUsername('John Doe'); // Placeholder
-        } else {
-            if (location.state.userID) setUserID(location.state.userID);
-            if (location.state.password) setUserHash(location.state.password);
-            if (location.state.username) setUsername(location.state.username);
-            loadSavedLogins();
-            loadSavedNotes();
-        }
-    }, [location.state]);
+        loadSavedLogins();
+        loadSavedNotes();
+    }, []);
 
 
     const loadSavedLogins = async () => {
         try {
-            const response = await fetch(`/login_items/users/${userID}`);
+            const response = await fetch('/login_items/users/userID');
             if (!response.ok) {
                 throw new Error('Failed to fetch logins');
             }
@@ -47,7 +29,7 @@ function HomePage({ setLoginItem }) {
 
     const loadSavedNotes = async () => {
         try {
-            const response = await fetch(`/notes/users/${userID}`);
+            const response = await fetch('/notes/users/userID');
             if (!response.ok) {
                 throw new Error('Failed to fetch notes');
             }
@@ -67,19 +49,14 @@ function HomePage({ setLoginItem }) {
         }
     };
 
-    const navigate = useNavigate();
     const editLoginRow = async login => {
         setLoginItem(login);
         navigate("/edit-login");
     }
 
-    const favoriteLoginRow = async login => {
-    }
-
-
     return (
         <div>
-            <h1>Welcome to SafeSave, {username}!</h1>
+            <h1>Welcome to SafeSave!!!</h1>
             <p>Your secure vault for online credentials and notes.</p>
 
             <div className="content-section">
@@ -96,7 +73,9 @@ function HomePage({ setLoginItem }) {
 
             <div className="content-section">
                 <h2>Quick Summary</h2>
-                <p>You have {savedLogins.length} saved logins and {savedNotes.length} saved notes.</p>
+                <p>
+                    You have {savedLogins.length === 1 ? '1 saved login' : `${savedLogins.length} saved logins`} and {savedNotes.length === 1 ? '1 saved note' : `${savedNotes.length} saved notes`}.
+                </p>
             </div>
 
             <section className="content-section">

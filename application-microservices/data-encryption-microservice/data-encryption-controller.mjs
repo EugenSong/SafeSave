@@ -3,9 +3,6 @@ import express from 'express';
 import * as dataEncryptionModel from './data-encryption-model.mjs';
 import path from 'path';
 
-
-import db from './db-connector.cjs';
-
 // HTTPS
 import https from 'https';
 import { readFileSync } from 'fs';
@@ -29,6 +26,8 @@ try {
     process.exit(1);
 }
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 const passphrase = process.env.SSL_PASSPHRASE;
 const creds = { key: privateKey, cert: certificate, passphrase: passphrase };
 
@@ -50,6 +49,7 @@ app.post('/ciphertext', async (req, res) => {
         noteAccessedDate,
         userID,
         userHash,
+        userSalt
     } = req.body;
 
     try {
@@ -65,6 +65,7 @@ app.post('/ciphertext', async (req, res) => {
                     noteAccessedDate: noteAccessedDate,
                     userID: userID,
                     userHash: userHash,
+                    userSalt: userSalt
                 }
             );
 
@@ -78,7 +79,7 @@ app.post('/ciphertext', async (req, res) => {
                 userNoteTextIV: encryptedData.userNoteTextIV,
                 authTag: encryptedData.authTag
             };
-            res.status(201).json(response);
+            return res.status(201).json(response);
         }
 
         else if (req.body.userLoginWebsite && req.body.userLoginUsername && req.body.userLoginPassword){
@@ -88,7 +89,8 @@ app.post('/ciphertext', async (req, res) => {
                     website: req.body.userLoginWebsite,
                     username: req.body.userLoginUsername,
                     password: req.body.userLoginPassword,
-                    userHash: req.body.userHash
+                    userHash: req.body.userHash,
+                    userSalt: req.body.userSalt
                 }
             );
 
@@ -102,17 +104,17 @@ app.post('/ciphertext', async (req, res) => {
                 authTag: encryptedData.authTag
             };
 
-            res.status(201).json(response);
+            return res.status(201).json(response);
         }
         else{
             console.log("Invalid query");
-            res.status(400).json({error: error.message});
+            return res.status(400).json({error: error.message});
         }
 
 
 
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        return res.status(400).json({ error: error.message });
     }
 });
 
