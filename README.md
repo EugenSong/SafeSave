@@ -10,7 +10,7 @@
 <br />
 <div align="center">
 
-<h1 align="center">SafeSave</h1>
+<h1 align="center"><a href="https://safesave.ddns.net">SafeSave</a></h1>
 
   <p align="center">
     a complete, secure data and notes management web application
@@ -58,7 +58,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-SafeSave is a fully secure password and personal information web application management system. SafeSave completely masks the data entered into the database by using modern AES 265 CBC data encryption to ensure that the user’s information is not compromised in the case that SafeSave’s database is exposed to bad actors. The web application supports different user accounts, each with access to their data and their data alone, along with two factor authentication to ensure the highest level of security for users on the SafeSave platform. Multiple microservices handle different functionality seen across the platform such as user log ins, data encryption, two factor authentication, etc. to isolate independent aspects of the web application system. Overall, SafeSave provides users with a totally encrypted solution to saving their passwords and personal notes that only the intended user can possibly access.​
+SafeSave is a fully secure password and personal information web application management system. SafeSave completely masks the data entered into the database by using modern AES 256 CBC data encryption to ensure that the user’s information is not compromised in the case that SafeSave’s database is exposed to bad actors. The web application supports different user accounts, each with access to their data and their data alone, along with two factor authentication to ensure the highest level of security for users on the SafeSave platform. Multiple microservices handle different functionality seen across the platform such as user log ins, data encryption, two factor authentication, etc. to isolate independent aspects of the web application system. Overall, SafeSave provides users with a totally encrypted solution to saving their passwords and personal notes that only the intended user can possibly access.​
 
 [![Product Name Screen Shot][product-screenshot]](https://github.com/EugenSong/EugenSong/assets/75242911/b68cd924-93de-4372-a9d4-e17f6dd5da33)
 
@@ -121,12 +121,38 @@ To get a local copy up and running complete both Prerequisites and Installation 
     database: '\''replaceMeWithDatabase'\'',
    ```
 
-4. Import database schema into MySQL instance, `enhancedCookieSecurity.db`
+4. Import database schema into MySQL instance by running `source empty_schema.db` within your MySQL terminal.
 5. Run all Microservices using `start` script
    ```sh
    ./start
    ```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## No log policy
+
+SafeSave does not log any user credentials or decrypted information. Below is a sample of what is logged when a user logs in and fetches their notes. The local version on the main branch logs much more for diagnostic purposes.
+
+
+```sh
+xxx@xxx ~> cat /home/xxx/.forever/735V.log
+Express application-controller server started listening on port 3001...
+VALIDATION CHECK true
+VALIDATION FOR HMAC CHECK PASSED
+loginItemRouter/users/userID, userID is: 1
+VALIDATION CHECK true
+VALIDATION FOR HMAC CHECK PASSED
+VALIDATION CHECK true
+VALIDATION FOR HMAC CHECK PASSED
+loginItemRouter/users/userID, userID is: 1
+VALIDATION CHECK true
+VALIDATION FOR HMAC CHECK PASSED
+VALIDATION CHECK true
+VALIDATION FOR HMAC CHECK PASSED
+```
+
+## Your data is safe with SafeSave
+![ezgif-3-0376bd5763](https://github.com/aldenmchico/SafeSave/assets/97023911/6d35c01b-e9ac-426a-8f41-907ca308a4fc)
+
 
 
 

@@ -9,9 +9,19 @@ function TwoFactorAuthenticationPage() {
     const [resendCooldown, setResendCooldown] = useState(false);
     const [is2FAEnabled, setIs2FAEnabled] = useState(true); // New state variable
     const [qrCode, setQRCode] = useState('');
+    const [mfaSecret, setmfaSecret] = useState('');
+    const [invalidCookie, setInvalidCookie] = useState(false);
+
 
     const navigate = useNavigate();
     const cooldownTimer = useRef(null);
+
+    useEffect(() => {
+        if (invalidCookie) {
+            alert('Invalid or expired cookie');
+            navigate('/');
+        }
+    }, [invalidCookie]);
 
 
     // check if current User has 2FA enabled on mounting 
@@ -40,14 +50,35 @@ function TwoFactorAuthenticationPage() {
             const response = await fetch('/api/generate-mfa-qr-code');
 
             if (response.ok) {
-                const qrCodeImageBlob = await response.blob();
+                const responseData = await response.json();
+                const base64Image = responseData.qrCodeImage;
+                const binaryImage = atob(base64Image); // Decoding base64
+                const length = binaryImage.length;
+                const imageBytes = new Uint8Array(length);
+
+                for (let i = 0; i < length; i++) {
+                    imageBytes[i] = binaryImage.charCodeAt(i);
+                }
+
+                const qrCodeImageBlob = new Blob([imageBytes], { type: 'image/png' });
                 setQRCode(URL.createObjectURL(qrCodeImageBlob));
-            } else {
+                setmfaSecret(responseData.mfaTempSecret);
+            }
+            else if(response.status === 401 || response.status === 403 || response.status === 500){
+                if(!invalidCookie){
+                    setInvalidCookie(true);
+                }
+            }
+
+            else {
                 throw new Error('Failed to generate QR code');
             }
         } catch (error) {
             console.error('Error generating QR code:', error);
             setErrorMsg('An error occurred while generating the QR code for two-factor authentication.');
+            if(!invalidCookie){
+                setInvalidCookie(true);
+            }
         }
     };
 
@@ -62,39 +93,25 @@ function TwoFactorAuthenticationPage() {
 
             if (response.ok && !responseData.has2FAAndNoSecret) {
                 return false
-            } else if (response.ok && responseData.has2FAAndNoSecret) {
+            }
+            else if(response.status === 401 || response.status === 403 || response.status === 500){
+                if(!invalidCookie){
+                    setInvalidCookie(true);
+                }
+            }
+            else if (response.ok && responseData.has2FAAndNoSecret) {
                 return true
             }
 
         } catch (error) {
             console.error('There was a problem with the fetch operation in SettingsPage, locateUserAndCheck2FAEnabledAndNoSecret():', error.message);
+            if(!invalidCookie){
+                setInvalidCookie(true);
+            }
+
         }
     }
 
-    const handleResendCode = async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetch('/resend-2fa-code', {
-                method: 'POST',
-            });
-
-            if (response.ok) {
-                setSuccessMsg('2FA code resent successfully! Please check your email.');
-                setResendCooldown(true);
-                cooldownTimer.current = setTimeout(() => {
-                    setResendCooldown(false);
-                }, 120000);  // 2 minutes cooldown
-            } else {
-                const responseData = await response.json();
-                setErrorMsg(responseData.message || 'Error resending the 2FA code. Please try again later.');
-            }
-        } catch (error) {
-            console.error('Error resending 2FA code:', error);
-            setErrorMsg('An error occurred while resending the code. Please try again.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -144,7 +161,7 @@ function TwoFactorAuthenticationPage() {
             ) : (
                 // If 2FA is enabled, display the form and other elements.
                 <>
-                    <p>We've sent a 6-digit 2FA code to your email. Please enter it below to proceed. If you haven't received it, check your spam folder or click the resend button below.</p>
+		    <p>Please scan the QR code below with a 2FA authenticator app and enter the six-digit code in the box below. Microsoft Authenticator is the preferred choice.</p>
                     <form onSubmit={handleSubmit}>
                         <input
                             type="text"
@@ -158,13 +175,14 @@ function TwoFactorAuthenticationPage() {
                         {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
                         <button type="submit" disabled={isLoading}>Verify</button>
                     </form>
-                    <button onClick={handleResendCode} disabled={resendCooldown || isLoading}>
-                        Resend Code
-                    </button>
                     {qrCode && (
                         <div>
                             <p>Scan this QR code with your 2FA app:</p>
                             <img src={qrCode} alt="2FA QR Code" />
+                            <br></br>
+                            <br></br>
+                            <p>Alternatively, you can copy this code directly into your authenticator app:</p>
+                            <code>{mfaSecret}</code>
                         </div>
                     )}
                     {isLoading && <p>Loading...</p>}
