@@ -107,7 +107,7 @@ To get a local copy up and running complete both Prerequisites and Installation 
     ```sh
     chmod +x ./docker.sh
     ```
-3. If you want to run the Docker image without root privileges, see <a href=https://linuxopsys.com/topics/add-user-to-docker-group> this tutorial. </a>
+3. If you want to run the Docker image without root privileges, see <a href=https://linuxopsys.com/topics/add-user-to-docker-group> this tutorial</a>, or run `sudo usermod -aG docker $USER` and source your shell config/open a new shell. 
 4. Otherwise, execute the script. If you did not add yourself to the docker group, you will need to run the script with `sudo`. 
     ```sh
         ./docker.sh
@@ -120,9 +120,9 @@ The `docker.sh` script assumes you are running on an amd64-based platform. The `
 
 ```sh
 #!/bin/bash
-
-tar -xvzf SafeSaveDocker.tar.gz && \
-	cd SafeSave && \
+mkdir SafeSaveDocker && \
+tar -xvzf SafeSaveDocker.tar.gz -C SafeSaveDocker && \
+	cd SafeSaveDocker/SafeSave && \
 	find . -type f -name Dockerfile -exec sed -i 's|https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-linux-amd64-v0.6.1.tar.gz|https://github.com/jwilder/dockerize/releases/download/v0.7.0/dockerize-linux-arm64-v0.7.0.tar.gz|; s|dockerize-linux-amd64-v0.6.1.tar.gz|dockerize-linux-arm64-v0.7.0.tar.gz|' {} + && \
 docker compose up --build
 ```
